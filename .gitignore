@@ -216,3 +216,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+junk/
+database/

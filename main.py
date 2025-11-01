@@ -51,6 +51,38 @@ def add_products():
 
     return jsonify(new_product), 201 # 201 Created
 
+@app.route('/sales', methods=['POST'])
+def add_sales():
+    sales = request.json
+    for sale in sales:
+        if "id" not in sale or not sale["id"]:
+            return jsonify({"error": "product id should not be empty"}), 400
+        if "quantity" not in sale or not sale["quantity"]:
+            return jsonify({"error": "quantity should not be empty"}), 400
+
+    conn = get_db_connection()
+    # Construct the SQL query with placeholders for the IDs
+    # The '?' placeholders will be replaced by the values from id_list
+    placeholders = ','.join('?' * len(sales))
+    sql_query = f"SELECT id, name, price FROM products WHERE id IN ({placeholders})"
+    # Execute the query, passing the id_list as parameters
+    products = conn.execute(sql_query, [sale["id"] for sale in sales]).fetchall()
+    conn.commit()
+    conn.close()
+
+    total = 0
+    products_dict = {product["id"]: product for product in products}
+    for sale in sales:
+        product = products_dict[sale["id"]]
+        sale_total = int(sale["quantity"]) * product["price"]
+        sale["total"] = sale_total
+        total += sale_total
+
+    return jsonify({
+        "sales": sales,
+        "total": total,
+    }), 201 # 201 Created
+
 def main():
     init_database()
     app.run(debug=True, host="0.0.0.0", port="8001")
