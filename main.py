@@ -53,7 +53,11 @@ def add_products():
 
 @app.route('/sales', methods=['POST'])
 def add_sales():
-    sales = request.json
+    req = request.json
+    discount = req.get("discount", 0)
+    if discount < 0:
+            return jsonify({"error": "discount should not be negative"}), 400
+    sales = req["sales"]
     for sale in sales:
         if "id" not in sale or not sale["id"]:
             return jsonify({"error": "product id should not be empty"}), 400
@@ -78,9 +82,14 @@ def add_sales():
         sale["total"] = sale_total
         total += sale_total
 
+    if discount > 0:
+        for sale in sales:
+            sale["discount"] = round(discount / total * sale["total"], 2)
+            sale["real_price"] = round(sale["total"] - sale["discount"], 2)
+
     return jsonify({
         "sales": sales,
-        "total": total,
+        "total": total - discount,
     }), 201 # 201 Created
 
 def main():
